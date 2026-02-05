@@ -13,18 +13,17 @@ import { PrestamoVersion } from '../../prestamo-versiones/entities/prestamo-vers
 import { Cuota } from '../../cuotas/entities/cuota.entity';
 import { Pago } from '../../pagos/entities/pago.entity';
 import { HistorialPrestamo } from '../../historial-prestamo/entities/historial-prestamo.entity';
-import { Usuario } from '../../usuarios/entities/usuario.entity';
 
 @Entity('prestamos')
 @Index('idx_prestamos_cliente', ['clienteId'])
 @Index('idx_prestamos_estado', ['estado'])
-@Index('idx_prestamos_usuario', ['usuarioId'])
+@Index('idx_prestamos_organizacion', ['organizacionId'])
 export class Prestamo {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
-  @Column({ type: 'bigint', name: 'usuario_id' })
-  usuarioId: number;
+  @Column({ type: 'bigint', name: 'organizacion_id' })
+  organizacionId: number;
 
   @Column({ type: 'bigint', name: 'cliente_id' })
   clienteId: number;
@@ -37,10 +36,6 @@ export class Prestamo {
 
   @CreateDateColumn({ name: 'fecha_creacion' })
   fechaCreacion: Date;
-
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'usuario_id' })
-  usuario: Usuario;
 
   @ManyToOne(() => Cliente, (cliente) => cliente.prestamos, {
     onDelete: 'RESTRICT',

@@ -35,8 +35,16 @@ export class UsuariosService {
     });
   }
 
-  async findAll(page = 1, limit = 10) {
+  async verifyOrganizacion(usuarioId: number, organizacionId: number) {
+    const u = await this.findById(usuarioId);
+    if (!u || u.organizacionId !== organizacionId) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+  }
+
+  async findAll(organizacionId: number, page = 1, limit = 10) {
     const [items, total] = await this.usuarioRepo.findAndCount({
+      where: { organizacionId },
       relations: ['roles'],
       skip: (page - 1) * limit,
       take: limit,
@@ -45,7 +53,7 @@ export class UsuariosService {
     return { items, total, page, limit };
   }
 
-  async create(dto: CreateUsuarioDto) {
+  async create(dto: CreateUsuarioDto, organizacionId: number) {
     const existente = await this.findByEmail(dto.email);
     if (existente) {
       throw new ConflictException('El email ya está registrado');
@@ -55,6 +63,7 @@ export class UsuariosService {
     const usuario = this.usuarioRepo.create({
       ...rest,
       passwordHash,
+      organizacionId,
     });
     const saved = await this.usuarioRepo.save(usuario);
     const roleIds = (rol_ids || []).map((id) => Number(id)).filter((id) => !isNaN(id));
@@ -83,17 +92,21 @@ export class UsuariosService {
       throw new ConflictException('El email ya está registrado');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const rolCobrador = await this.rolRepo.findOne({
-      where: { codigo: 'COBRADOR' },
+    const rolAdmin = await this.rolRepo.findOne({
+      where: { codigo: 'ADMIN' },
     });
     const usuario = this.usuarioRepo.create({
       email: dto.email,
       passwordHash,
       nombre: dto.nombre,
       activo: true,
-      roles: rolCobrador ? [rolCobrador] : [],
+      roles: rolAdmin ? [rolAdmin] : [],
     });
-    return this.usuarioRepo.save(usuario);
+    const saved = await this.usuarioRepo.save(usuario);
+    await this.usuarioRepo.update(saved.id, {
+      organizacionId: saved.id,
+    } as Partial<Usuario>);
+    return this.usuarioRepo.findOne({ where: { id: saved.id }, relations: ['roles'] }) as Promise<Usuario>;
   }
 
   async update(id: number, dto: UpdateUsuarioDto) {

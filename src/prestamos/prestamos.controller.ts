@@ -23,6 +23,10 @@ import { Roles } from '../common/decorators/roles.decorator';
 @ApiBearerAuth()
 @Controller('prestamos')
 export class PrestamosController {
+  private getOrgId(user: { usuario: { id: number; organizacionId: number | null } }) {
+    return user.usuario.organizacionId ?? user.usuario.id;
+  }
+
   constructor(
     private readonly prestamosService: PrestamosService,
     private readonly cuotasService: CuotasService,
@@ -33,15 +37,15 @@ export class PrestamosController {
   @Get('dashboard')
   @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Dashboard: total prestado, cobrado e interés ganado' })
-  async getDashboard(@CurrentUser() user: { id: number }) {
-    return this.prestamosService.getDashboard(user.id);
+  async getDashboard(@CurrentUser() user: { usuario: { id: number; organizacionId: number | null } }) {
+    return this.prestamosService.getDashboard(this.getOrgId(user));
   }
 
   @Get()
   @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
-  @ApiOperation({ summary: 'Listar préstamos del usuario' })
+  @ApiOperation({ summary: 'Listar préstamos de mi organización' })
   async findAll(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Query('cliente_id') clienteIdStr?: string,
     @Query('estado') estado?: string,
     @Query('page') pageStr?: string,
@@ -51,7 +55,7 @@ export class PrestamosController {
     const page = pageStr ? parseInt(pageStr, 10) : 1;
     const limit = limitStr ? parseInt(limitStr, 10) : 10;
     return this.prestamosService.findAll(
-      user.id,
+      this.getOrgId(user),
       clienteId,
       estado,
       page,
@@ -63,52 +67,52 @@ export class PrestamosController {
   @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Obtener préstamo por ID' })
   async findOne(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.prestamosService.findOne(id, user.id);
+    return this.prestamosService.findOne(id, this.getOrgId(user));
   }
 
   @Post()
   @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Crear préstamo y generar cuotas' })
   async create(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Body() dto: CreatePrestamoDto,
   ) {
-    return this.prestamosService.create(dto, user.id);
+    return this.prestamosService.create(dto, this.getOrgId(user));
   }
 
   @Patch(':id')
   @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Actualizar estado del préstamo' })
   async update(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePrestamoDto,
   ) {
-    return this.prestamosService.update(id, dto, user.id);
+    return this.prestamosService.update(id, dto, this.getOrgId(user));
   }
 
   @Post(':id/saldar')
   @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Marcar préstamo como pagado' })
   async saldar(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.prestamosService.saldar(id, user.id);
+    return this.prestamosService.saldar(id, this.getOrgId(user));
   }
 
   @Get(':prestamoId/cuotas')
   @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Listar cuotas del préstamo' })
   async getCuotas(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('prestamoId', ParseIntPipe) prestamoId: number,
     @Query('estado') estado?: string,
   ) {
-    await this.prestamosService.findOne(prestamoId, user.id);
+    await this.prestamosService.findOne(prestamoId, this.getOrgId(user));
     return this.cuotasService.findByPrestamo(prestamoId, estado);
   }
 
@@ -116,10 +120,10 @@ export class PrestamosController {
   @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Historial de pagos del préstamo' })
   async getPagos(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('prestamoId', ParseIntPipe) prestamoId: number,
   ) {
-    await this.prestamosService.findOne(prestamoId, user.id);
+    await this.prestamosService.findOne(prestamoId, this.getOrgId(user));
     return this.pagosService.findByPrestamo(prestamoId);
   }
 
@@ -127,11 +131,11 @@ export class PrestamosController {
   @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Registrar pago y aplicar a cuotas' })
   async registrarPago(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('prestamoId', ParseIntPipe) prestamoId: number,
     @Body() dto: CreatePagoDto,
   ) {
-    await this.prestamosService.findOne(prestamoId, user.id);
+    await this.prestamosService.findOne(prestamoId, this.getOrgId(user));
     return this.pagosService.registrarPago(prestamoId, dto);
   }
 
@@ -139,10 +143,10 @@ export class PrestamosController {
   @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Historial de cambios del préstamo' })
   async getHistorial(
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { usuario: { id: number; organizacionId: number | null } },
     @Param('prestamoId', ParseIntPipe) prestamoId: number,
   ) {
-    await this.prestamosService.findOne(prestamoId, user.id);
+    await this.prestamosService.findOne(prestamoId, this.getOrgId(user));
     return this.historialService.findByPrestamo(prestamoId);
   }
 }

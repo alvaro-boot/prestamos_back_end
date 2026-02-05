@@ -37,9 +37,9 @@ export class PrestamosService {
   /**
    * Dashboard: total prestado (capital inicial), total cobrado, interés ganado (según lo pagado).
    */
-  async getDashboard(usuarioId: number) {
+  async getDashboard(organizacionId: number) {
     const prestamos = await this.prestamoRepo.find({
-      where: { usuarioId },
+      where: { organizacionId },
       relations: ['versiones', 'versiones.cuotas'],
     });
 
@@ -84,7 +84,7 @@ export class PrestamosService {
   }
 
   async findAll(
-    usuarioId: number,
+    organizacionId: number,
     clienteId?: number,
     estado?: string,
     page = 1,
@@ -93,7 +93,7 @@ export class PrestamosService {
     const qb = this.prestamoRepo
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.cliente', 'c')
-      .where('p.usuarioId = :usuarioId', { usuarioId })
+      .where('p.organizacionId = :organizacionId', { organizacionId })
       .orderBy('p.id', 'DESC');
     if (clienteId) qb.andWhere('p.clienteId = :clienteId', { clienteId });
     if (estado) qb.andWhere('p.estado = :estado', { estado });
@@ -104,9 +104,9 @@ export class PrestamosService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: number, usuarioId: number) {
+  async findOne(id: number, organizacionId: number) {
     const prestamo = await this.prestamoRepo.findOne({
-      where: { id, usuarioId },
+      where: { id, organizacionId },
       relations: [
         'cliente',
         'versiones',
@@ -231,9 +231,9 @@ export class PrestamosService {
     return cuotas;
   }
 
-  async create(dto: CreatePrestamoDto, usuarioId: number) {
+  async create(dto: CreatePrestamoDto, organizacionId: number) {
     const cliente = await this.clienteRepo.findOne({
-      where: { id: dto.cliente_id, usuarioId },
+      where: { id: dto.cliente_id, organizacionId },
     });
     if (!cliente) throw new NotFoundException('Cliente no encontrado');
     const frecuencia = await this.frecuenciaRepo.findOne({
@@ -248,7 +248,7 @@ export class PrestamosService {
     try {
       const prestamo = queryRunner.manager.create(Prestamo, {
         clienteId: dto.cliente_id,
-        usuarioId,
+        organizacionId,
         estado: 'ACTIVO',
       });
       const savedPrestamo = await queryRunner.manager.save(prestamo);
@@ -308,7 +308,7 @@ export class PrestamosService {
       });
 
       await queryRunner.commitTransaction();
-      return this.findOne(savedPrestamo.id, usuarioId);
+      return this.findOne(savedPrestamo.id, organizacionId);
     } catch (e) {
       await queryRunner.rollbackTransaction();
       throw e;
@@ -317,8 +317,8 @@ export class PrestamosService {
     }
   }
 
-  async update(id: number, dto: UpdatePrestamoDto, usuarioId: number) {
-    const prestamo = await this.findOne(id, usuarioId);
+  async update(id: number, dto: UpdatePrestamoDto, organizacionId: number) {
+    const prestamo = await this.findOne(id, organizacionId);
     if (!prestamo) throw new NotFoundException('Préstamo no encontrado');
 
     const modificarCuotas =
@@ -326,7 +326,7 @@ export class PrestamosService {
       prestamo.estado === 'ACTIVO';
 
     if (modificarCuotas) {
-      return this.modificarPlazoYCuotas(id, dto, usuarioId);
+      return this.modificarPlazoYCuotas(id, dto, organizacionId);
     }
 
     const estadoAnterior = prestamo.estado;
@@ -339,15 +339,15 @@ export class PrestamosService {
       });
       await this.prestamoRepo.update(id, { estado: dto.estado });
     }
-    return this.findOne(id, usuarioId);
+    return this.findOne(id, organizacionId);
   }
 
   /**
    * Marca el préstamo como PAGADO y salda todas las cuotas pendientes (saldo = 0).
    */
-  async saldar(id: number, usuarioId: number) {
+  async saldar(id: number, organizacionId: number) {
     const prestamo = await this.prestamoRepo.findOne({
-      where: { id, usuarioId },
+      where: { id, organizacionId },
     });
     if (!prestamo) throw new NotFoundException('Préstamo no encontrado');
     if (prestamo.estado === 'PAGADO') {
@@ -380,7 +380,7 @@ export class PrestamosService {
       });
 
       await queryRunner.commitTransaction();
-      return this.findOne(id, usuarioId);
+      return this.findOne(id, organizacionId);
     } catch (e) {
       await queryRunner.rollbackTransaction();
       throw e;
@@ -397,10 +397,10 @@ export class PrestamosService {
   private async modificarPlazoYCuotas(
     prestamoId: number,
     dto: UpdatePrestamoDto,
-    usuarioId: number,
+    organizacionId: number,
   ) {
     const prestamo = await this.prestamoRepo.findOne({
-      where: { id: prestamoId, usuarioId },
+      where: { id: prestamoId, organizacionId },
       relations: ['versiones', 'versiones.frecuenciaPago'],
     });
     if (!prestamo) throw new NotFoundException('Préstamo no encontrado');
@@ -430,7 +430,7 @@ export class PrestamosService {
         newPlazo,
         newFrecuenciaId,
         frecuencia,
-        usuarioId,
+        organizacionId,
       );
     }
 
@@ -471,7 +471,7 @@ export class PrestamosService {
       newPlazo,
       newFrecuenciaId,
       frecuencia,
-      usuarioId,
+      organizacionId,
     );
   }
 
@@ -481,7 +481,7 @@ export class PrestamosService {
     newPlazo: number,
     newFrecuenciaId: number,
     frecuencia: FrecuenciaPago,
-    usuarioId: number,
+    organizacionId: number,
   ) {
     const monto = Number(versionActual.monto);
     const interesPorcentaje = versionActual.interesPorcentaje;
@@ -523,7 +523,7 @@ export class PrestamosService {
       });
 
       await queryRunner.commitTransaction();
-      return this.findOne(prestamoId, usuarioId);
+      return this.findOne(prestamoId, organizacionId);
     } catch (e) {
       await queryRunner.rollbackTransaction();
       throw e;
@@ -543,7 +543,7 @@ export class PrestamosService {
     newPlazo: number,
     newFrecuenciaId: number,
     frecuencia: FrecuenciaPago,
-    usuarioId: number,
+    organizacionId: number,
   ) {
     const interesPorcentaje = versionActual.interesPorcentaje;
 
@@ -640,7 +640,7 @@ export class PrestamosService {
       });
 
       await queryRunner.commitTransaction();
-      return this.findOne(prestamoId, usuarioId);
+      return this.findOne(prestamoId, organizacionId);
     } catch (e) {
       await queryRunner.rollbackTransaction();
       throw e;

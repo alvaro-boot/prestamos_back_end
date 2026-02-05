@@ -27,6 +27,9 @@ export class Usuario {
   @Column({ type: 'boolean', default: true })
   activo: boolean;
 
+  @Column({ type: 'bigint', name: 'organizacion_id', nullable: true })
+  organizacionId: number | null;
+
   @CreateDateColumn({ name: 'fecha_creacion' })
   fechaCreacion: Date;
 
