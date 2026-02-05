@@ -14,6 +14,7 @@ import { ClientesService } from './clientes.service';
 import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Clientes')
 @ApiBearerAuth()
@@ -22,6 +23,7 @@ export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
   @Get()
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Listar clientes del usuario' })
   async findAll(
     @CurrentUser() user: { id: number },
@@ -35,6 +37,7 @@ export class ClientesController {
   }
 
   @Get(':id')
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Obtener cliente por ID' })
   async findOne(
     @CurrentUser() user: { id: number },
@@ -44,6 +47,7 @@ export class ClientesController {
   }
 
   @Post()
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Crear cliente' })
   async create(
     @CurrentUser() user: { id: number },
@@ -53,6 +57,7 @@ export class ClientesController {
   }
 
   @Patch(':id')
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Actualizar cliente' })
   async update(
     @CurrentUser() user: { id: number },
@@ -63,6 +68,7 @@ export class ClientesController {
   }
 
   @Delete(':id')
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Eliminar cliente' })
   async remove(
     @CurrentUser() user: { id: number },

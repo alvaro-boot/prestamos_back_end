@@ -51,12 +51,29 @@ export class UsuariosService {
       throw new ConflictException('El email ya está registrado');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
+    const { rol_ids, ...rest } = dto;
     const usuario = this.usuarioRepo.create({
-      ...dto,
+      ...rest,
       passwordHash,
     });
     const saved = await this.usuarioRepo.save(usuario);
-    const { passwordHash: _, ...result } = saved;
+    const roleIds = (rol_ids || []).map((id) => Number(id)).filter((id) => !isNaN(id));
+    if (roleIds.length > 0) {
+      const roles = await this.rolRepo.find({ where: { id: In(roleIds) } });
+      saved.roles = roles;
+      await this.usuarioRepo.save(saved);
+    } else {
+      const rolCobrador = await this.rolRepo.findOne({
+        where: { codigo: 'COBRADOR' },
+      });
+      if (rolCobrador) {
+        saved.roles = [rolCobrador];
+        await this.usuarioRepo.save(saved);
+      }
+    }
+    const usuarioCreado = await this.findById(saved.id);
+    if (!usuarioCreado) return saved;
+    const { passwordHash: _p, ...result } = usuarioCreado;
     return result;
   }
 

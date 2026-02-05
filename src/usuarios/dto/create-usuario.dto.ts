@@ -4,8 +4,10 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  IsArray,
+  IsNumber,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUsuarioDto {
   @ApiProperty()
@@ -19,12 +21,21 @@ export class CreateUsuarioDto {
   @IsNotEmpty()
   password: string;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   nombre?: string;
 
-  @ApiProperty({ required: false, default: true })
+  @ApiPropertyOptional({ default: true })
   @IsOptional()
   activo?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'IDs de roles a asignar (ej: [2] para COBRADOR). Si no se envía, se asigna COBRADOR.',
+    type: [Number],
+    example: [2],
+  })
+  @IsOptional()
+  @IsArray()
+  rol_ids?: number[];
 }

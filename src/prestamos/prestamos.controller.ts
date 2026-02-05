@@ -17,6 +17,7 @@ import { CuotasService } from '../cuotas/cuotas.service';
 import { PagosService } from '../pagos/pagos.service';
 import { HistorialPrestamoService } from '../historial-prestamo/historial-prestamo.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Préstamos')
 @ApiBearerAuth()
@@ -30,12 +31,14 @@ export class PrestamosController {
   ) {}
 
   @Get('dashboard')
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Dashboard: total prestado, cobrado e interés ganado' })
   async getDashboard(@CurrentUser() user: { id: number }) {
     return this.prestamosService.getDashboard(user.id);
   }
 
   @Get()
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Listar préstamos del usuario' })
   async findAll(
     @CurrentUser() user: { id: number },
@@ -57,6 +60,7 @@ export class PrestamosController {
   }
 
   @Get(':id')
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Obtener préstamo por ID' })
   async findOne(
     @CurrentUser() user: { id: number },
@@ -66,6 +70,7 @@ export class PrestamosController {
   }
 
   @Post()
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Crear préstamo y generar cuotas' })
   async create(
     @CurrentUser() user: { id: number },
@@ -75,6 +80,7 @@ export class PrestamosController {
   }
 
   @Patch(':id')
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Actualizar estado del préstamo' })
   async update(
     @CurrentUser() user: { id: number },
@@ -85,6 +91,7 @@ export class PrestamosController {
   }
 
   @Post(':id/saldar')
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Marcar préstamo como pagado' })
   async saldar(
     @CurrentUser() user: { id: number },
@@ -94,6 +101,7 @@ export class PrestamosController {
   }
 
   @Get(':prestamoId/cuotas')
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Listar cuotas del préstamo' })
   async getCuotas(
     @CurrentUser() user: { id: number },
@@ -105,6 +113,7 @@ export class PrestamosController {
   }
 
   @Get(':prestamoId/pagos')
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Historial de pagos del préstamo' })
   async getPagos(
     @CurrentUser() user: { id: number },
@@ -115,6 +124,7 @@ export class PrestamosController {
   }
 
   @Post(':prestamoId/pagos')
+  @Roles('ADMIN', 'COBRADOR')
   @ApiOperation({ summary: 'Registrar pago y aplicar a cuotas' })
   async registrarPago(
     @CurrentUser() user: { id: number },
@@ -126,6 +136,7 @@ export class PrestamosController {
   }
 
   @Get(':prestamoId/historial')
+  @Roles('ADMIN', 'COBRADOR', 'CONSULTA')
   @ApiOperation({ summary: 'Historial de cambios del préstamo' })
   async getHistorial(
     @CurrentUser() user: { id: number },
