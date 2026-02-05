@@ -34,6 +34,55 @@ export class PrestamosService {
     private pagosService: PagosService,
   ) {}
 
+  /**
+   * Dashboard: total prestado (capital inicial), total cobrado, interés ganado (según lo pagado).
+   */
+  async getDashboard(usuarioId: number) {
+    const prestamos = await this.prestamoRepo.find({
+      where: { usuarioId },
+      relations: ['versiones', 'versiones.cuotas'],
+    });
+
+    let totalPrestado = 0;
+    let totalCobrado = 0;
+    let totalGanado = 0;
+
+    for (const p of prestamos) {
+      const versiones = (p.versiones || []).sort(
+        (a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime(),
+      );
+
+      for (let i = 0; i < versiones.length; i++) {
+        const v = versiones[i];
+        const monto = Number(v.monto);
+        const montoTotal = Number(v.montoTotal);
+        const totalInteres = montoTotal - monto;
+        const cuotas = v.cuotas || [];
+        const numCuotas = cuotas.length || 1;
+        const interesPorCuota = totalInteres / numCuotas;
+        const montoCuota = numCuotas > 0 ? montoTotal / numCuotas : 0;
+
+        if (i === 0) totalPrestado += monto;
+
+        for (const c of cuotas) {
+          const montoC = Number(c.montoCuota);
+          const saldoC = Number(c.saldoCuota);
+          const pagado = Math.max(0, montoC - saldoC);
+          totalCobrado += pagado;
+          if (montoC > 0 && pagado > 0) {
+            totalGanado += pagado * (interesPorCuota / montoC);
+          }
+        }
+      }
+    }
+
+    return {
+      total_prestado: Math.round(totalPrestado * 100) / 100,
+      total_cobrado: Math.round(totalCobrado * 100) / 100,
+      total_ganado: Math.round(totalGanado * 100) / 100,
+    };
+  }
+
   async findAll(
     usuarioId: number,
     clienteId?: number,

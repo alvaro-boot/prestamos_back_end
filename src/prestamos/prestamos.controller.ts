@@ -29,6 +29,12 @@ export class PrestamosController {
     private readonly historialService: HistorialPrestamoService,
   ) {}
 
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Dashboard: total prestado, cobrado e interés ganado' })
+  async getDashboard(@CurrentUser() user: { id: number }) {
+    return this.prestamosService.getDashboard(user.id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar préstamos del usuario' })
   async findAll(
