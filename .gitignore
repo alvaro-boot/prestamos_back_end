@@ -1,0 +1,38 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+
+# Variables de entorno (contienen credenciales)
+.env
+.env.local
+.env.*.local
+
+# Base de datos local
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Cobertura de tests
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Temporales
+tmp/
+temp/
+*.tmp
